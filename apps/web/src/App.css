@@ -70,3 +70,134 @@
         grid-template-columns: 1fr;
     }
 }
+
+
+.auth_page {
+    box-sizing: border-box;
+    display: grid;
+    min-height: 100vh;
+    place-items: center;
+    padding: 24px;
+    background: #f4f7fb;
+    color: #1f2937;
+    font-family: Arial, sans-serif;
+}
+
+.auth_form {
+    box-sizing: border-box;
+    display: grid;
+    gap: 16px;
+    width: min(100%, 420px);
+    padding: 28px;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.auth_form h1 {
+    margin: 0;
+    font-size: 28px;
+}
+
+.auth_field {
+    display: grid;
+    gap: 6px;
+}
+
+.auth_field span {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.auth_field input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 10px;
+    border: 1px solid #b8c2d2;
+    border-radius: 6px;
+    font: inherit;
+}
+
+.auth_error {
+    margin: 0;
+    color: #b42318;
+}
+
+.profile_page {
+    box-sizing: border-box;
+    display: grid;
+    gap: 24px;
+    width: min(100%, 960px);
+    margin: 0 auto;
+    padding: 32px;
+    font-family: Arial, sans-serif;
+}
+
+.profile_section {
+    display: grid;
+    gap: 16px;
+    padding: 20px;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.profile_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.profile_header h1,
+.profile_section h2 {
+    margin: 0;
+}
+
+.profile_list {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+}
+
+.profile_list div {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 12px;
+}
+
+.profile_list dt {
+    font-weight: 700;
+}
+
+.profile_list dd {
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.profile_organization_list {
+    display: grid;
+    gap: 12px;
+    padding: 0;
+    list-style: none;
+}
+
+.profile_organization {
+    display: grid;
+    gap: 6px;
+    padding: 14px;
+    border: 1px solid #e0e5ee;
+    border-radius: 6px;
+}
+
+@media (max-width: 700px) {
+    .profile_page {
+        padding: 16px;
+    }
+
+    .profile_list div {
+        grid-template-columns: 1fr;
+    }
+}

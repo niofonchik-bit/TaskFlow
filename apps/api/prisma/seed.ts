@@ -7,7 +7,7 @@ function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL;
 
   if (!connectionString) {
-    throw new Error('Переменная DATABASE_URL не задана');
+    throw new Error('переменная DATABASE_URL не задана');
   }
 
   const adapter = new PrismaPg({ connectionString });
@@ -15,31 +15,50 @@ function createPrismaClient(): PrismaClient {
   return new PrismaClient({ adapter });
 }
 
-/** добавляет отсутствующую тестовую запись без создания дубля */
-async function seedTestRecords(prisma: PrismaClient): Promise<void> {
-  const testRecordNames = ['Первая тестовая запись', 'Вторая тестовая запись'];
-  const existingRecords = await prisma.testRecord.findMany({
+/** добавляет системную роль без создания дубля */
+async function seedSystemRole(
+  prisma: PrismaClient,
+  key: string,
+  name: string,
+): Promise<void> {
+  const existingRole = await prisma.roles.findFirst({
     where: {
-      name: {
-        in: testRecordNames,
-      },
+      organization_id: null,
+      key,
     },
     select: {
-      name: true,
+      id: true,
     },
   });
-  const existingNames = new Set(existingRecords.map((record) => record.name));
-  const missingRecords = testRecordNames
-    .filter((name) => !existingNames.has(name))
-    .map((name) => ({ name }));
 
-  if (missingRecords.length === 0) {
+  if (existingRole) {
+    await prisma.roles.update({
+      where: {
+        id: existingRole.id,
+      },
+      data: {
+        name,
+        is_system: true,
+      },
+    });
+
     return;
   }
 
-  await prisma.testRecord.createMany({
-    data: missingRecords,
+  await prisma.roles.create({
+    data: {
+      key,
+      name,
+      is_system: true,
+    },
   });
+}
+
+/** добавляет базовые системные роли для организаций */
+async function seedSystemRoles(prisma: PrismaClient): Promise<void> {
+  await seedSystemRole(prisma, 'owner', 'Владелец');
+  await seedSystemRole(prisma, 'admin', 'Администратор');
+  await seedSystemRole(prisma, 'member', 'Участник');
 }
 
 /** выполняет seed и гарантированно закрывает соединение */
@@ -47,7 +66,7 @@ async function main(): Promise<void> {
   const prisma = createPrismaClient();
 
   try {
-    await seedTestRecords(prisma);
+    await seedSystemRoles(prisma);
   } finally {
     await prisma.$disconnect();
   }
