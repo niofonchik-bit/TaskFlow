@@ -35,6 +35,8 @@ export class StorageService {
           'STORAGE_SECRET_ACCESS_KEY',
         ),
       },
+      forcePathStyle:
+        configService.get<string>('STORAGE_FORCE_PATH_STYLE') === 'true',
     });
   }
 

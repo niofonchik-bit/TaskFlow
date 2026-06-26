@@ -3,7 +3,7 @@ import { StorageService } from './storage.service';
 
 /** предоставление доступа к файлому хранилищу */
 @Module({
-    providers: [StorageService],
-    exports: [StorageService]
+  providers: [StorageService],
+  exports: [StorageService],
 })
 export class StorageModule {}

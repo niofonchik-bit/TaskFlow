@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { TestRecordResponse, TestService } from './test.service';
+import type { Express } from 'express';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
