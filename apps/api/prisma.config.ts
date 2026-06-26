@@ -1,7 +1,7 @@
 import 'dotenv/config';
-import { defineConfig, env } from 'prisma/config';
+import { defineConfig } from 'prisma/config';
 
-/** задает расположение схемы, миграции и команды seed */
+/** задает расположение схемы, миграций и seed */
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
@@ -9,6 +9,8 @@ export default defineConfig({
     seed: 'tsx prisma/seed.ts',
   },
   datasource: {
-    url: env('DATABASE_URL'),
+    url:
+      process.env.DATABASE_URL ??
+      'postgresql://unused:unused@localhost:5432/unused',
   },
 });

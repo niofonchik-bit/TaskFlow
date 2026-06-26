@@ -18,6 +18,11 @@ async function bootstrap() {
   const port = Number(process.env.PORT ?? 3001);
 
   await app.listen(port, '0.0.0.0');
+
+  console.log(`API started on port ${port}`);
 }
 
-void bootstrap();
+void bootstrap().catch((error: unknown) => {
+  console.error('API startup failed:', error);
+  process.exit(1);
+});
