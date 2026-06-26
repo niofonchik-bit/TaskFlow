@@ -12,9 +12,6 @@ async function bootstrap() {
   const allowedOrigin = process.env.AUTH_ALLOWED_ORIGIN;
 
   app.set('trust proxy', 1);
-  app.use(helmet());
-  app.use(json({ limit: '1mb' }));
-  app.use(createOriginGuard(allowedOrigin));
 
   app.use(helmet());
   app.use(json({ limit: '1mb' }));

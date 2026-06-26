@@ -17,7 +17,7 @@ export function createOriginGuard(allowedOrigin?: string) {
 
     const origin = request.headers.origin;
 
-    if (!allowedOrigin || !origin || origin === allowedOrigin) {
+    if (!allowedOrigin || origin === allowedOrigin) {
       next();
       return;
     }
