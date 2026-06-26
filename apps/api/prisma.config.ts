@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { defineConfig } from 'prisma/config';
 
-/** задает расположение схемы, миграций и seed */
+/** задает расположение схемы, миграций и команды seed */
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
