@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { TestModule } from './test/test.module';
 
 /** объединяет конфигурацию и функциональный модуль API */
 @Module({
@@ -14,7 +13,6 @@ import { TestModule } from './test/test.module';
     }),
     PrismaModule,
     HealthModule,
-    TestModule,
   ],
 })
 export class AppModule {}
