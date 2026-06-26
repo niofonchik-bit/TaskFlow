@@ -1,22 +1,865 @@
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  moduleFormat = "cjs"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
+  moduleFormat    = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-model TestRecord {
-  id            Int       @id @default(autoincrement())
-  name          String
-  createdAt     DateTime  @default(now()) @map("created_at")
-  fileName      String?   @map("file_name")
-  fileKey       String?   @unique @map("file_key")
-  fileMimeType  String?   @map("file_mime_type")
-  fileSize      Int?      @map("file_size")
-  fileUpdatedAt DateTime? @map("file_updated_at")
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model attachments {
+  id                                           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id                              String          @db.Uuid
+  task_id                                      String          @db.Uuid
+  kind                                         attachment_kind
+  file_key                                     String?         @unique
+  file_name                                    String?
+  mime_type                                    String?
+  file_size                                    BigInt?
+  external_url                                 String?
+  uploaded_by_id                               String?         @db.Uuid
+  created_at                                   DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at                                   DateTime        @default(now()) @db.Timestamptz(6)
+  archived_at                                  DateTime?       @db.Timestamptz(6)
+  archived_by_id                               String?         @db.Uuid
+  version                                      Int             @default(1)
+  users_attachments_archived_by_idTousers      users?          @relation("attachments_archived_by_idTousers", fields: [archived_by_id], references: [id], onUpdate: NoAction)
+  organizations                                organizations   @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks_attachments_task_idTotasks             tasks           @relation("attachments_task_idTotasks", fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_attachments_uploaded_by_idTousers      users?          @relation("attachments_uploaded_by_idTousers", fields: [uploaded_by_id], references: [id], onUpdate: NoAction)
+  tasks_tasks_cover_attachment_idToattachments tasks[]         @relation("tasks_cover_attachment_idToattachments")
 
-  @@map("test_records")
+  @@index([task_id], map: "ix_attachments__task", where: raw("(archived_at IS NULL)"))
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model audit_log {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String?        @db.Uuid
+  actor_user_id   String?        @db.Uuid
+  action          String
+  entity_type     String
+  entity_id       String?        @db.Uuid
+  metadata        Json           @default("{}")
+  ip_address      String?        @db.Inet
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  users           users?         @relation(fields: [actor_user_id], references: [id], onUpdate: NoAction)
+  organizations   organizations? @relation(fields: [organization_id], references: [id], onUpdate: NoAction)
+
+  @@index([organization_id, created_at], map: "ix_audit_log__org_created")
+}
+
+model board_favorites {
+  user_id    String   @db.Uuid
+  board_id   String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  boards     boards   @relation(fields: [board_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, board_id])
+}
+
+model board_group_access {
+  board_id     String       @db.Uuid
+  group_id     String       @db.Uuid
+  access_level access_level @default(view)
+  boards       boards       @relation(fields: [board_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  groups       groups       @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([board_id, group_id])
+}
+
+model board_members {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  board_id   String     @db.Uuid
+  user_id    String     @db.Uuid
+  board_role board_role @default(editor)
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  boards     boards     @relation(fields: [board_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([board_id, user_id], map: "uq_board_members__board_user")
+  @@index([user_id], map: "ix_board_members__user")
+}
+
+model board_team_access {
+  board_id     String       @db.Uuid
+  team_id      String       @db.Uuid
+  access_level access_level @default(view)
+  boards       boards       @relation(fields: [board_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  teams        teams        @relation(fields: [team_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([board_id, team_id])
+}
+
+model board_user_preferences {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String          @db.Uuid
+  board_id          String          @db.Uuid
+  view_type         board_view_type @default(kanban)
+  filters           Json            @default("{}")
+  sorting           Json            @default("{}")
+  grouping          Json            @default("{}")
+  table_columns     Json            @default("[]")
+  collapsed_columns Json            @default("[]")
+  density           String          @default("normal")
+  zoom              String?
+  show_completed    Boolean         @default(true)
+  updated_at        DateTime        @default(now()) @db.Timestamptz(6)
+  boards            boards          @relation(fields: [board_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, board_id], map: "uq_board_prefs__user_board")
+}
+
+model boards {
+  id                                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id                    String                   @db.Uuid
+  name                               String
+  description                        String?
+  color_preset_id                    String?                  @db.Uuid
+  cover_file_key                     String?
+  privacy_mode                       board_privacy_mode       @default(ORGANIZATION)
+  owner_user_id                      String                   @db.Uuid
+  responsible_team_id                String?                  @db.Uuid
+  position                           Decimal                  @default(0) @db.Decimal(20, 10)
+  is_template                        Boolean                  @default(false)
+  created_at                         DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at                         DateTime                 @default(now()) @db.Timestamptz(6)
+  created_by_id                      String?                  @db.Uuid
+  updated_by_id                      String?                  @db.Uuid
+  archived_at                        DateTime?                @db.Timestamptz(6)
+  archived_by_id                     String?                  @db.Uuid
+  version                            Int                      @default(1)
+  board_favorites                    board_favorites[]
+  board_group_access                 board_group_access[]
+  board_members                      board_members[]
+  board_team_access                  board_team_access[]
+  board_user_preferences             board_user_preferences[]
+  users_boards_archived_by_idTousers users?                   @relation("boards_archived_by_idTousers", fields: [archived_by_id], references: [id], onUpdate: NoAction)
+  color_presets                      color_presets?           @relation(fields: [color_preset_id], references: [id], onUpdate: NoAction)
+  users_boards_created_by_idTousers  users?                   @relation("boards_created_by_idTousers", fields: [created_by_id], references: [id], onUpdate: NoAction)
+  organizations                      organizations            @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_boards_owner_user_idTousers  users                    @relation("boards_owner_user_idTousers", fields: [owner_user_id], references: [id], onUpdate: NoAction)
+  teams                              teams?                   @relation(fields: [responsible_team_id], references: [id], onUpdate: NoAction)
+  users_boards_updated_by_idTousers  users?                   @relation("boards_updated_by_idTousers", fields: [updated_by_id], references: [id], onUpdate: NoAction)
+  columns                            columns[]
+  tags                               tags[]
+  tasks                              tasks[]
+
+  @@index([organization_id], map: "ix_boards__org_active", where: raw("(archived_at IS NULL)"))
+  @@index([organization_id, position], map: "ix_boards__org_position")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model checklist_items {
+  id                                            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  checklist_id                                  String     @db.Uuid
+  content                                       String
+  is_completed                                  Boolean    @default(false)
+  completed_at                                  DateTime?  @db.Timestamptz(6)
+  completed_by_id                               String?    @db.Uuid
+  assignee_user_id                              String?    @db.Uuid
+  due_date                                      DateTime?  @db.Timestamptz(6)
+  position                                      Decimal    @db.Decimal(20, 10)
+  created_at                                    DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at                                    DateTime   @default(now()) @db.Timestamptz(6)
+  version                                       Int        @default(1)
+  users_checklist_items_assignee_user_idTousers users?     @relation("checklist_items_assignee_user_idTousers", fields: [assignee_user_id], references: [id], onUpdate: NoAction)
+  checklists                                    checklists @relation(fields: [checklist_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_checklist_items_completed_by_idTousers  users?     @relation("checklist_items_completed_by_idTousers", fields: [completed_by_id], references: [id], onUpdate: NoAction)
+
+  @@index([checklist_id, position], map: "ix_checklist_items__checklist_pos")
+}
+
+model checklists {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String            @db.Uuid
+  task_id         String            @db.Uuid
+  title           String
+  position        Decimal           @db.Decimal(20, 10)
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @default(now()) @db.Timestamptz(6)
+  archived_at     DateTime?         @db.Timestamptz(6)
+  version         Int               @default(1)
+  checklist_items checklist_items[]
+  organizations   organizations     @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks           tasks             @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([task_id], map: "ix_checklists__task")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model color_presets {
+  id                                                         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id                                            String?           @db.Uuid
+  key                                                        String
+  name                                                       String
+  background_color                                           String
+  foreground_color                                           String
+  border_color                                               String?
+  is_system                                                  Boolean           @default(false)
+  is_active                                                  Boolean           @default(true)
+  sort_order                                                 Int               @default(0)
+  created_at                                                 DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at                                                 DateTime          @default(now()) @db.Timestamptz(6)
+  boards                                                     boards[]
+  organizations_color_presets_organization_idToorganizations organizations?    @relation("color_presets_organization_idToorganizations", fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_color_presets__org")
+  columns                                                    columns[]
+  groups                                                     groups[]
+  organizations_organizations_color_preset_idTocolor_presets organizations[]   @relation("organizations_color_preset_idTocolor_presets")
+  priorities                                                 priorities[]
+  tags                                                       tags[]
+  task_categories                                            task_categories[]
+  task_types                                                 task_types[]
+  teams                                                      teams[]
+
+  @@unique([organization_id, key], map: "uq_color_presets__org_key")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model columns {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  board_id        String         @db.Uuid
+  organization_id String         @db.Uuid
+  name            String
+  description     String?
+  color_preset_id String?        @db.Uuid
+  position        Decimal        @db.Decimal(20, 10)
+  task_limit      Int?
+  is_done_column  Boolean        @default(false)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  archived_at     DateTime?      @db.Timestamptz(6)
+  archived_by_id  String?        @db.Uuid
+  version         Int            @default(1)
+  users           users?         @relation(fields: [archived_by_id], references: [id], onUpdate: NoAction)
+  boards          boards         @relation(fields: [board_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  color_presets   color_presets? @relation(fields: [color_preset_id], references: [id], onUpdate: NoAction)
+  organizations   organizations  @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks           tasks[]
+
+  @@index([board_id, position], map: "ix_columns__board_position", where: raw("(archived_at IS NULL)"))
+}
+
+model comment_mentions {
+  comment_id        String   @db.Uuid
+  mentioned_user_id String   @db.Uuid
+  comments          comments @relation(fields: [comment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             users    @relation(fields: [mentioned_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([comment_id, mentioned_user_id])
+}
+
+model comment_reactions {
+  comment_id String   @db.Uuid
+  user_id    String   @db.Uuid
+  emoji      String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  comments   comments @relation(fields: [comment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([comment_id, user_id, emoji])
+}
+
+model comments {
+  id                String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id   String                   @db.Uuid
+  task_id           String                   @db.Uuid
+  author_id         String?                  @db.Uuid
+  parent_comment_id String?                  @db.Uuid
+  body              String
+  search_vector     Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, COALESCE(body, ''::text))"))
+  edited_at         DateTime?                @db.Timestamptz(6)
+  deleted_at        DateTime?                @db.Timestamptz(6)
+  created_at        DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime                 @default(now()) @db.Timestamptz(6)
+  version           Int                      @default(1)
+  comment_mentions  comment_mentions[]
+  comment_reactions comment_reactions[]
+  users             users?                   @relation(fields: [author_id], references: [id], onUpdate: NoAction)
+  organizations     organizations            @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  comments          comments?                @relation("commentsTocomments", fields: [parent_comment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  other_comments    comments[]               @relation("commentsTocomments")
+  tasks             tasks                    @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([search_vector], map: "ix_comments__search", type: Gin)
+  @@index([task_id, created_at], map: "ix_comments__task_created", where: raw("(deleted_at IS NULL)"))
+}
+
+model email_verification_tokens {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String    @db.Uuid
+  token_hash   Bytes     @unique
+  email        String    @db.Citext
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  expires_at   DateTime  @db.Timestamptz(6)
+  consumed_at  DateTime? @db.Timestamptz(6)
+  requested_ip String?   @db.Inet
+  users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "ix_email_verif__active", where: raw("(consumed_at IS NULL)"))
+}
+
+model group_members {
+  group_id String   @db.Uuid
+  user_id  String   @db.Uuid
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+  groups   groups   @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users    users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([group_id, user_id])
+  @@index([user_id], map: "ix_group_members__user")
+}
+
+model groups {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id    String               @db.Uuid
+  name               String
+  description        String?
+  color_preset_id    String?              @db.Uuid
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  archived_at        DateTime?            @db.Timestamptz(6)
+  archived_by_id     String?              @db.Uuid
+  version            Int                  @default(1)
+  board_group_access board_group_access[]
+  group_members      group_members[]
+  users              users?               @relation(fields: [archived_by_id], references: [id], onUpdate: NoAction)
+  color_presets      color_presets?       @relation(fields: [color_preset_id], references: [id], onUpdate: NoAction)
+  organizations      organizations        @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([organization_id, name], map: "ux_groups__org_name_active", where: raw("(archived_at IS NULL)"))
+}
+
+model invitations {
+  id                                        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id                           String            @db.Uuid
+  email                                     String            @db.Citext
+  role_id                                   String            @db.Uuid
+  token_hash                                Bytes             @unique
+  status                                    invitation_status @default(pending)
+  invited_by_id                             String?           @db.Uuid
+  expires_at                                DateTime          @db.Timestamptz(6)
+  accepted_at                               DateTime?         @db.Timestamptz(6)
+  accepted_user_id                          String?           @db.Uuid
+  created_at                                DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at                                DateTime          @default(now()) @db.Timestamptz(6)
+  users_invitations_accepted_user_idTousers users?            @relation("invitations_accepted_user_idTousers", fields: [accepted_user_id], references: [id], onUpdate: NoAction)
+  users_invitations_invited_by_idTousers    users?            @relation("invitations_invited_by_idTousers", fields: [invited_by_id], references: [id], onUpdate: NoAction)
+  organizations                             organizations     @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  roles                                     roles             @relation(fields: [role_id], references: [id], onUpdate: NoAction)
+
+  @@unique([organization_id, email], map: "ux_invitations__org_email_pending", where: raw("(status = 'pending'::invitation_status)"))
+  @@index([organization_id], map: "ix_invitations__org")
+}
+
+model notifications {
+  id                                           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id                              String            @db.Uuid
+  recipient_user_id                            String            @db.Uuid
+  type                                         notification_type
+  entity_type                                  String
+  entity_id                                    String?           @db.Uuid
+  actor_user_id                                String?           @db.Uuid
+  payload                                      Json              @default("{}")
+  read_at                                      DateTime?         @db.Timestamptz(6)
+  created_at                                   DateTime          @default(now()) @db.Timestamptz(6)
+  users_notifications_actor_user_idTousers     users?            @relation("notifications_actor_user_idTousers", fields: [actor_user_id], references: [id], onUpdate: NoAction)
+  organizations                                organizations     @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_notifications_recipient_user_idTousers users             @relation("notifications_recipient_user_idTousers", fields: [recipient_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([recipient_user_id, created_at], map: "ix_notifications__recipient_unread", where: raw("(read_at IS NULL)"))
+}
+
+model organization_members {
+  id                                               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id                                  String        @db.Uuid
+  user_id                                          String        @db.Uuid
+  role_id                                          String        @db.Uuid
+  status                                           member_status @default(active)
+  joined_at                                        DateTime      @default(now()) @db.Timestamptz(6)
+  created_at                                       DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at                                       DateTime      @default(now()) @db.Timestamptz(6)
+  archived_at                                      DateTime?     @db.Timestamptz(6)
+  archived_by_id                                   String?       @db.Uuid
+  version                                          Int           @default(1)
+  users_organization_members_archived_by_idTousers users?        @relation("organization_members_archived_by_idTousers", fields: [archived_by_id], references: [id], onUpdate: NoAction)
+  organizations                                    organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  roles                                            roles         @relation(fields: [role_id], references: [id], onUpdate: NoAction)
+  users_organization_members_user_idTousers        users         @relation("organization_members_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([organization_id, user_id], map: "ux_org_members__org_user_active", where: raw("(archived_at IS NULL)"))
+  @@index([user_id], map: "ix_org_members__user")
+}
+
+model organizations {
+  id                                                         String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                                                       String
+  slug                                                       String                 @unique @db.Citext
+  description                                                String?
+  logo_file_key                                              String?
+  color_preset_id                                            String?                @db.Uuid
+  owner_user_id                                              String                 @db.Uuid
+  settings                                                   Json                   @default("{}")
+  created_at                                                 DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at                                                 DateTime               @default(now()) @db.Timestamptz(6)
+  created_by_id                                              String?                @db.Uuid
+  updated_by_id                                              String?                @db.Uuid
+  archived_at                                                DateTime?              @db.Timestamptz(6)
+  archived_by_id                                             String?                @db.Uuid
+  version                                                    Int                    @default(1)
+  attachments                                                attachments[]
+  audit_log                                                  audit_log[]
+  boards                                                     boards[]
+  checklists                                                 checklists[]
+  color_presets_color_presets_organization_idToorganizations color_presets[]        @relation("color_presets_organization_idToorganizations")
+  columns                                                    columns[]
+  comments                                                   comments[]
+  groups                                                     groups[]
+  invitations                                                invitations[]
+  notifications                                              notifications[]
+  organization_members                                       organization_members[]
+  users_organizations_archived_by_idTousers                  users?                 @relation("organizations_archived_by_idTousers", fields: [archived_by_id], references: [id], onUpdate: NoAction)
+  color_presets_organizations_color_preset_idTocolor_presets color_presets?         @relation("organizations_color_preset_idTocolor_presets", fields: [color_preset_id], references: [id], onUpdate: NoAction)
+  users_organizations_created_by_idTousers                   users?                 @relation("organizations_created_by_idTousers", fields: [created_by_id], references: [id], onUpdate: NoAction)
+  users_organizations_owner_user_idTousers                   users                  @relation("organizations_owner_user_idTousers", fields: [owner_user_id], references: [id], onUpdate: NoAction)
+  users_organizations_updated_by_idTousers                   users?                 @relation("organizations_updated_by_idTousers", fields: [updated_by_id], references: [id], onUpdate: NoAction)
+  priorities                                                 priorities[]
+  roles                                                      roles[]
+  tags                                                       tags[]
+  task_categories                                            task_categories[]
+  task_events                                                task_events[]
+  task_links                                                 task_links[]
+  task_types                                                 task_types[]
+  tasks                                                      tasks[]
+  teams                                                      teams[]
+}
+
+model password_reset_tokens {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String    @db.Uuid
+  token_hash   Bytes     @unique
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  expires_at   DateTime  @db.Timestamptz(6)
+  consumed_at  DateTime? @db.Timestamptz(6)
+  requested_ip String?   @db.Inet
+  users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "ix_pwd_reset__active", where: raw("(consumed_at IS NULL)"))
+}
+
+model permissions {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key              String             @unique
+  description      String
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  role_permissions role_permissions[]
+}
+
+model priorities {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String?        @db.Uuid
+  key             String
+  name            String
+  color_preset_id String?        @db.Uuid
+  level           Int            @default(0)
+  is_system       Boolean        @default(false)
+  is_active       Boolean        @default(true)
+  sort_order      Int            @default(0)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  archived_at     DateTime?      @db.Timestamptz(6)
+  color_presets   color_presets? @relation(fields: [color_preset_id], references: [id], onUpdate: NoAction)
+  organizations   organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks           tasks[]
+}
+
+model role_permissions {
+  role_id       String      @db.Uuid
+  permission_id String      @db.Uuid
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([role_id, permission_id])
+}
+
+model roles {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id      String?                @db.Uuid
+  key                  String                 @unique(map: "ux_roles__system_key", where: raw("(organization_id IS NULL)"))
+  name                 String
+  is_system            Boolean                @default(false)
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  invitations          invitations[]
+  organization_members organization_members[]
+  role_permissions     role_permissions[]
+  organizations        organizations?         @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([organization_id, key], map: "uq_roles__org_key")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sessions {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String    @db.Uuid
+  token_hash     Bytes     @unique
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  expires_at     DateTime  @db.Timestamptz(6)
+  last_active_at DateTime  @default(now()) @db.Timestamptz(6)
+  ip_address     String?   @db.Inet
+  user_agent     String?
+  device_label   String?
+  revoked_at     DateTime? @db.Timestamptz(6)
+  users          users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at], map: "ix_sessions__expires_at")
+  @@index([user_id], map: "ix_sessions__user_id")
+}
+
+model tags {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String         @db.Uuid
+  board_id        String?        @db.Uuid
+  name            String
+  description     String?
+  color_preset_id String?        @db.Uuid
+  is_active       Boolean        @default(true)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  archived_at     DateTime?      @db.Timestamptz(6)
+  version         Int            @default(1)
+  boards          boards?        @relation(fields: [board_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  color_presets   color_presets? @relation(fields: [color_preset_id], references: [id], onUpdate: NoAction)
+  organizations   organizations  @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  task_tags       task_tags[]
+
+  @@unique([board_id, name], map: "ux_tags__board_name_active", where: raw("((archived_at IS NULL) AND (board_id IS NOT NULL))"))
+  @@unique([organization_id, name], map: "ux_tags__org_name_active", where: raw("((archived_at IS NULL) AND (board_id IS NULL))"))
+}
+
+model task_assignees {
+  task_id                                    String   @db.Uuid
+  user_id                                    String   @db.Uuid
+  assigned_at                                DateTime @default(now()) @db.Timestamptz(6)
+  assigned_by_id                             String?  @db.Uuid
+  users_task_assignees_assigned_by_idTousers users?   @relation("task_assignees_assigned_by_idTousers", fields: [assigned_by_id], references: [id], onUpdate: NoAction)
+  tasks                                      tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_task_assignees_user_idTousers        users    @relation("task_assignees_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([task_id, user_id])
+  @@index([user_id], map: "ix_task_assignees__user")
+}
+
+model task_categories {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String         @db.Uuid
+  name            String
+  color_preset_id String?        @db.Uuid
+  is_active       Boolean        @default(true)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  archived_at     DateTime?      @db.Timestamptz(6)
+  color_presets   color_presets? @relation(fields: [color_preset_id], references: [id], onUpdate: NoAction)
+  organizations   organizations  @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks           tasks[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model task_events {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String        @db.Uuid
+  task_id         String        @db.Uuid
+  actor_user_id   String?       @db.Uuid
+  event_type      String
+  field           String?
+  old_value       Json?
+  new_value       Json?
+  metadata        Json          @default("{}")
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  users           users?        @relation(fields: [actor_user_id], references: [id], onUpdate: NoAction)
+  organizations   organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks           tasks         @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([task_id, created_at], map: "ix_task_events__task_created")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model task_links {
+  id                                     String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id                        String         @db.Uuid
+  source_task_id                         String         @db.Uuid
+  target_task_id                         String         @db.Uuid
+  link_type                              task_link_type
+  created_at                             DateTime       @default(now()) @db.Timestamptz(6)
+  created_by_id                          String?        @db.Uuid
+  users                                  users?         @relation(fields: [created_by_id], references: [id], onUpdate: NoAction)
+  organizations                          organizations  @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks_task_links_source_task_idTotasks tasks          @relation("task_links_source_task_idTotasks", fields: [source_task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks_task_links_target_task_idTotasks tasks          @relation("task_links_target_task_idTotasks", fields: [target_task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([source_task_id, target_task_id, link_type], map: "uq_task_links__triple")
+  @@index([target_task_id], map: "ix_task_links__target")
+}
+
+model task_tags {
+  task_id  String   @db.Uuid
+  tag_id   String   @db.Uuid
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+  tags     tags     @relation(fields: [tag_id], references: [id], onUpdate: NoAction)
+  tasks    tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([task_id, tag_id])
+  @@index([tag_id], map: "ix_task_tags__tag")
+}
+
+model task_types {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String?        @db.Uuid
+  key             String
+  name            String
+  description     String?
+  icon            String?
+  color_preset_id String?        @db.Uuid
+  is_system       Boolean        @default(false)
+  is_active       Boolean        @default(true)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  archived_at     DateTime?      @db.Timestamptz(6)
+  color_presets   color_presets? @relation(fields: [color_preset_id], references: [id], onUpdate: NoAction)
+  organizations   organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks           tasks[]
+}
+
+model task_watchers {
+  task_id String @db.Uuid
+  user_id String @db.Uuid
+  tasks   tasks  @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users   users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([task_id, user_id])
+  @@index([user_id], map: "ix_task_watchers__user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tasks {
+  id                                                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id                                    String                   @db.Uuid
+  board_id                                           String                   @db.Uuid
+  column_id                                          String                   @db.Uuid
+  title                                              String
+  description                                        String?
+  search_vector                                      Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, ((COALESCE(title, ''::text) || ' '::text) || COALESCE(description, ''::text)))"))
+  type_id                                            String?                  @db.Uuid
+  category_id                                        String?                  @db.Uuid
+  priority_id                                        String?                  @db.Uuid
+  responsible_user_id                                String?                  @db.Uuid
+  start_date                                         DateTime?                @db.Timestamptz(6)
+  due_date                                           DateTime?                @db.Timestamptz(6)
+  completed_at                                       DateTime?                @db.Timestamptz(6)
+  position                                           Decimal                  @db.Decimal(20, 10)
+  cover_attachment_id                                String?                  @db.Uuid
+  created_at                                         DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at                                         DateTime                 @default(now()) @db.Timestamptz(6)
+  created_by_id                                      String?                  @db.Uuid
+  updated_by_id                                      String?                  @db.Uuid
+  archived_at                                        DateTime?                @db.Timestamptz(6)
+  archived_by_id                                     String?                  @db.Uuid
+  version                                            Int                      @default(1)
+  attachments_attachments_task_idTotasks             attachments[]            @relation("attachments_task_idTotasks")
+  checklists                                         checklists[]
+  comments                                           comments[]
+  task_assignees                                     task_assignees[]
+  task_events                                        task_events[]
+  task_links_task_links_source_task_idTotasks        task_links[]             @relation("task_links_source_task_idTotasks")
+  task_links_task_links_target_task_idTotasks        task_links[]             @relation("task_links_target_task_idTotasks")
+  task_tags                                          task_tags[]
+  task_watchers                                      task_watchers[]
+  attachments_tasks_cover_attachment_idToattachments attachments?             @relation("tasks_cover_attachment_idToattachments", fields: [cover_attachment_id], references: [id], onUpdate: NoAction, map: "fk_tasks__cover")
+  users_tasks_archived_by_idTousers                  users?                   @relation("tasks_archived_by_idTousers", fields: [archived_by_id], references: [id], onUpdate: NoAction)
+  boards                                             boards                   @relation(fields: [board_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  task_categories                                    task_categories?         @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  columns                                            columns                  @relation(fields: [column_id], references: [id], onUpdate: NoAction)
+  users_tasks_created_by_idTousers                   users?                   @relation("tasks_created_by_idTousers", fields: [created_by_id], references: [id], onUpdate: NoAction)
+  organizations                                      organizations            @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  priorities                                         priorities?              @relation(fields: [priority_id], references: [id], onUpdate: NoAction)
+  users_tasks_responsible_user_idTousers             users?                   @relation("tasks_responsible_user_idTousers", fields: [responsible_user_id], references: [id], onUpdate: NoAction)
+  task_types                                         task_types?              @relation(fields: [type_id], references: [id], onUpdate: NoAction)
+  users_tasks_updated_by_idTousers                   users?                   @relation("tasks_updated_by_idTousers", fields: [updated_by_id], references: [id], onUpdate: NoAction)
+
+  @@index([organization_id, archived_at], map: "ix_tasks__archived", where: raw("(archived_at IS NOT NULL)"))
+  @@index([board_id, column_id, position], map: "ix_tasks__board_column_position", where: raw("(archived_at IS NULL)"))
+  @@index([due_date], map: "ix_tasks__due_date", where: raw("((archived_at IS NULL) AND (due_date IS NOT NULL))"))
+  @@index([organization_id], map: "ix_tasks__org_active", where: raw("(archived_at IS NULL)"))
+  @@index([responsible_user_id], map: "ix_tasks__responsible")
+  @@index([search_vector], map: "ix_tasks__search", type: Gin)
+}
+
+model team_members {
+  team_id  String   @db.Uuid
+  user_id  String   @db.Uuid
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+  teams    teams    @relation(fields: [team_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users    users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([team_id, user_id])
+  @@index([user_id], map: "ix_team_members__user")
+}
+
+model teams {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id   String              @db.Uuid
+  name              String
+  description       String?
+  color_preset_id   String?             @db.Uuid
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  archived_at       DateTime?           @db.Timestamptz(6)
+  archived_by_id    String?             @db.Uuid
+  version           Int                 @default(1)
+  board_team_access board_team_access[]
+  boards            boards[]
+  team_members      team_members[]
+  users             users?              @relation(fields: [archived_by_id], references: [id], onUpdate: NoAction)
+  color_presets     color_presets?      @relation(fields: [color_preset_id], references: [id], onUpdate: NoAction)
+  organizations     organizations       @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([organization_id, name], map: "ux_teams__org_name_active", where: raw("(archived_at IS NULL)"))
+}
+
+model users {
+  id                                                              String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                                                           String                      @unique(map: "ux_users__email_active", where: raw("(archived_at IS NULL)")) @db.Citext
+  password_hash                                                   String
+  display_name                                                    String
+  avatar_file_key                                                 String?
+  status                                                          user_status                 @default(active)
+  email_verified_at                                               DateTime?                   @db.Timestamptz(6)
+  last_login_at                                                   DateTime?                   @db.Timestamptz(6)
+  failed_login_count                                              Int                         @default(0)
+  locked_until                                                    DateTime?                   @db.Timestamptz(6)
+  created_at                                                      DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at                                                      DateTime                    @default(now()) @db.Timestamptz(6)
+  archived_at                                                     DateTime?                   @db.Timestamptz(6)
+  archived_by_id                                                  String?                     @db.Uuid
+  version                                                         Int                         @default(1)
+  attachments_attachments_archived_by_idTousers                   attachments[]               @relation("attachments_archived_by_idTousers")
+  attachments_attachments_uploaded_by_idTousers                   attachments[]               @relation("attachments_uploaded_by_idTousers")
+  audit_log                                                       audit_log[]
+  board_favorites                                                 board_favorites[]
+  board_members                                                   board_members[]
+  board_user_preferences                                          board_user_preferences[]
+  boards_boards_archived_by_idTousers                             boards[]                    @relation("boards_archived_by_idTousers")
+  boards_boards_created_by_idTousers                              boards[]                    @relation("boards_created_by_idTousers")
+  boards_boards_owner_user_idTousers                              boards[]                    @relation("boards_owner_user_idTousers")
+  boards_boards_updated_by_idTousers                              boards[]                    @relation("boards_updated_by_idTousers")
+  checklist_items_checklist_items_assignee_user_idTousers         checklist_items[]           @relation("checklist_items_assignee_user_idTousers")
+  checklist_items_checklist_items_completed_by_idTousers          checklist_items[]           @relation("checklist_items_completed_by_idTousers")
+  columns                                                         columns[]
+  comment_mentions                                                comment_mentions[]
+  comment_reactions                                               comment_reactions[]
+  comments                                                        comments[]
+  email_verification_tokens                                       email_verification_tokens[]
+  group_members                                                   group_members[]
+  groups                                                          groups[]
+  invitations_invitations_accepted_user_idTousers                 invitations[]               @relation("invitations_accepted_user_idTousers")
+  invitations_invitations_invited_by_idTousers                    invitations[]               @relation("invitations_invited_by_idTousers")
+  notifications_notifications_actor_user_idTousers                notifications[]             @relation("notifications_actor_user_idTousers")
+  notifications_notifications_recipient_user_idTousers            notifications[]             @relation("notifications_recipient_user_idTousers")
+  organization_members_organization_members_archived_by_idTousers organization_members[]      @relation("organization_members_archived_by_idTousers")
+  organization_members_organization_members_user_idTousers        organization_members[]      @relation("organization_members_user_idTousers")
+  organizations_organizations_archived_by_idTousers               organizations[]             @relation("organizations_archived_by_idTousers")
+  organizations_organizations_created_by_idTousers                organizations[]             @relation("organizations_created_by_idTousers")
+  organizations_organizations_owner_user_idTousers                organizations[]             @relation("organizations_owner_user_idTousers")
+  organizations_organizations_updated_by_idTousers                organizations[]             @relation("organizations_updated_by_idTousers")
+  password_reset_tokens                                           password_reset_tokens[]
+  sessions                                                        sessions[]
+  task_assignees_task_assignees_assigned_by_idTousers             task_assignees[]            @relation("task_assignees_assigned_by_idTousers")
+  task_assignees_task_assignees_user_idTousers                    task_assignees[]            @relation("task_assignees_user_idTousers")
+  task_events                                                     task_events[]
+  task_links                                                      task_links[]
+  task_watchers                                                   task_watchers[]
+  tasks_tasks_archived_by_idTousers                               tasks[]                     @relation("tasks_archived_by_idTousers")
+  tasks_tasks_created_by_idTousers                                tasks[]                     @relation("tasks_created_by_idTousers")
+  tasks_tasks_responsible_user_idTousers                          tasks[]                     @relation("tasks_responsible_user_idTousers")
+  tasks_tasks_updated_by_idTousers                                tasks[]                     @relation("tasks_updated_by_idTousers")
+  team_members                                                    team_members[]
+  teams                                                           teams[]
+  users                                                           users?                      @relation("usersTousers", fields: [archived_by_id], references: [id], onUpdate: NoAction)
+  other_users                                                     users[]                     @relation("usersTousers")
+}
+
+enum access_level {
+  view
+  edit
+}
+
+enum attachment_kind {
+  file
+  image
+  external_link
+}
+
+enum board_privacy_mode {
+  PRIVATE
+  ORGANIZATION
+  TEAM
+  CUSTOM
+}
+
+enum board_role {
+  admin
+  editor
+  viewer
+}
+
+enum board_view_type {
+  kanban
+  table
+  calendar
+  timeline
+}
+
+enum invitation_status {
+  pending
+  accepted
+  revoked
+  expired
+}
+
+enum member_status {
+  active
+  blocked
+}
+
+enum notification_type {
+  assigned
+  mentioned
+  comment
+  due_soon
+  overdue
+  privacy_changed
+  board_added
+  related_completed
+  watched_changed
+}
+
+enum task_link_type {
+  relates_to
+  blocks
+  blocked_by
+  duplicate_of
+  derived_from
+  parent_of
+  child_of
+}
+
+enum user_status {
+  active
+  blocked
 }
