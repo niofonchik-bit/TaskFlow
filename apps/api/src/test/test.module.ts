@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { StorageModule } from '../storage/storage.module';
 import { TestController } from './test.controller';
 import { TestService } from './test.service';
 
-/** регистрирует тестовый маршрут и слой данных */
+/** регистрирует тестовые маршруты */
 @Module({
+  imports: [StorageModule],
   controllers: [TestController],
   providers: [TestService],
 })

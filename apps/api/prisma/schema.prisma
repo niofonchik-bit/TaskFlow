@@ -9,9 +9,14 @@ datasource db {
 }
 
 model TestRecord {
-  id        Int      @id @default(autoincrement())
-  name      String
-  createdAt DateTime @default(now()) @map("created_at")
+  id            Int       @id @default(autoincrement())
+  name          String
+  createdAt     DateTime  @default(now()) @map("created_at")
+  fileName      String?   @map("file_name")
+  fileKey       String?   @unique @map("file_key")
+  fileMimeType  String?   @map("file_mime_type")
+  fileSize      Int?      @map("file_size")
+  fileUpdatedAt DateTime? @map("file_updated_at")
 
   @@map("test_records")
 }
