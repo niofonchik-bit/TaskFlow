@@ -9,20 +9,22 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
-  /** создает Prisma Client с проверкой TLS-сертификата */
+  /** создает Prisma Client с поддержкой TLS */
   constructor(configService: ConfigService) {
     const connectionString = configService.getOrThrow<string>('DATABASE_URL');
-    const ca = configService
-      .getOrThrow<string>('DATABASE_CA_CERT')
-      .replace(/\\n/g, '\n');
+    const ca = configService.get<string>('DATABASE_CA_CERT');
 
     const adapter = new PrismaPg({
       connectionString,
-      ssl: {
-        ca,
-        rejectUnauthorized: true,
-        checkServerIdentity: () => undefined,
-      },
+      ...(ca
+        ? {
+            ssl: {
+              ca: ca.replace(/\\n/g, '\n'),
+              rejectUnauthorized: true,
+              checkServerIdentity: () => undefined,
+            },
+          }
+        : {}),
     });
 
     super({ adapter });
