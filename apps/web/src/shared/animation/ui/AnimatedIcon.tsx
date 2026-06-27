@@ -4,7 +4,12 @@ import { AnimatePresence } from 'motion/react';
 import * as m from 'motion/react-m';
 import type { AnimationChoice } from '../model/animation.types';
 import { useAnimationVariant } from '../model/useAnimationVariant';
-import { ICON_SWAP_ANIMATIONS, ICON_SWAP_ANIMATION_NAMES, type IconSwapAnimationName } from '../variants/iconSwapAnimations';
+import {
+    DEFAULT_ICON_SWAP_ANIMATION,
+    ICON_SWAP_ANIMATIONS,
+    ICON_SWAP_ANIMATION_NAMES,
+    type IconSwapAnimationName,
+} from '../variants/iconSwapAnimations';
 
 interface AnimatedIconProps {
     iconKey: Key;
@@ -13,7 +18,7 @@ interface AnimatedIconProps {
 }
 
 /** анимирует замену одной иконки другой */
-export function AnimatedIcon({ iconKey, children, animation = 'random' }: AnimatedIconProps) {
+export function AnimatedIcon({ iconKey, children, animation = DEFAULT_ICON_SWAP_ANIMATION }: AnimatedIconProps) {
     const animationName = useAnimationVariant(ICON_SWAP_ANIMATION_NAMES, animation);
 
     const animationConfig = ICON_SWAP_ANIMATIONS[animationName];
@@ -30,7 +35,7 @@ export function AnimatedIcon({ iconKey, children, animation = 'random' }: Animat
         >
             <AnimatePresence
                 initial={false}
-                mode='wait'
+                mode='popLayout'
             >
                 <m.span
                     key={iconKey}

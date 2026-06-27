@@ -12,7 +12,7 @@ interface PasswordFieldProps extends Omit<AppTextFieldProps, 'type' | 'startIcon
 }
 
 /** отображает поле пароля с анимированной сменой иконки */
-export function PasswordField({ iconAnimation = 'random', ...inputProps }: PasswordFieldProps) {
+export function PasswordField({ iconAnimation, ...inputProps }: PasswordFieldProps) {
     const [isVisible, setIsVisible] = useState(false);
 
     return (

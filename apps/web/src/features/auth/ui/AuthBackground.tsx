@@ -2,9 +2,15 @@ import type { CSSProperties } from 'react';
 import { Box, Stack } from '@mui/material';
 import { useReducedMotion } from 'motion/react';
 import * as m from 'motion/react-m';
-import { useAnimationVariant } from '../../../shared/animation/model/useAnimationVariant';
-import { AUTH_BACKGROUND_ANIMATIONS, AUTH_BACKGROUND_ANIMATION_NAMES } from '../animation/authBackgroundAnimations';
 import styles from './auth-shell/AuthShell.module.css';
+import type { AnimationChoice } from '../../../shared/animation/model/animation.types';
+import { useAnimationVariant } from '../../../shared/animation/model/useAnimationVariant';
+import {
+    AUTH_BACKGROUND_ANIMATIONS,
+    AUTH_BACKGROUND_ANIMATION_NAMES,
+    DEFAULT_AUTH_BACKGROUND_ANIMATION,
+    type AuthBackgroundAnimationName,
+} from '../animation/authBackgroundAnimations';
 
 interface BackgroundPosition {
     top?: CSSProperties['top'];
@@ -61,26 +67,27 @@ const FLOATING_CARDS: FloatingCardConfig[] = [
 
 interface AuthFloatingCardProps {
     config: FloatingCardConfig;
+    animationVariant: AnimationChoice<AuthBackgroundAnimationName>;
 }
 
 /** отображает одну декоративную карточку */
-function AuthFloatingCard({ config }: AuthFloatingCardProps) {
+function AuthFloatingCard({ config, animationVariant }: AuthFloatingCardProps) {
     const reduceMotion = useReducedMotion();
 
-    const animationName = useAnimationVariant(AUTH_BACKGROUND_ANIMATION_NAMES);
+    const animationName = useAnimationVariant(AUTH_BACKGROUND_ANIMATION_NAMES, animationVariant);
 
-    const animation = AUTH_BACKGROUND_ANIMATIONS[animationName];
+    const animationConfig = AUTH_BACKGROUND_ANIMATIONS[animationName];
 
     return (
         <m.div
             className={styles.auth_floating_card}
             style={config.position}
-            animate={reduceMotion ? undefined : animation.animate}
+            animate={reduceMotion ? undefined : animationConfig.animate}
             transition={
                 reduceMotion
                     ? undefined
                     : {
-                          ...animation.transition,
+                          ...animationConfig.transition,
                           delay: config.animationDelay,
                       }
             }
@@ -174,8 +181,12 @@ function AuthFloatingCard({ config }: AuthFloatingCardProps) {
     );
 }
 
+interface AuthBackgroundProps {
+    animation?: AnimationChoice<AuthBackgroundAnimationName>;
+}
+
 /** отображает декоративный фон страницы авторизации */
-export function AuthBackground() {
+export function AuthBackground({ animation = DEFAULT_AUTH_BACKGROUND_ANIMATION }: AuthBackgroundProps) {
     return (
         <Box
             aria-hidden='true'
@@ -185,6 +196,7 @@ export function AuthBackground() {
                 <AuthFloatingCard
                     key={config.id}
                     config={config}
+                    animationVariant={animation}
                 />
             ))}
         </Box>

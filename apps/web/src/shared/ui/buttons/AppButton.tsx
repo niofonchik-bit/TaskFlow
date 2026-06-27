@@ -5,7 +5,7 @@ import * as m from 'motion/react-m';
 import type { AnimationChoice } from '../../animation/model/animation.types';
 import { useAnimationVariant } from '../../animation/model/useAnimationVariant';
 import { ButtonLoadingIndicator } from './ButtonLoadingIndicator';
-import { BUTTON_LOADING_ANIMATION_NAMES, type ButtonLoadingAnimationName } from './buttonLoadingAnimations';
+import { BUTTON_LOADING_ANIMATION_NAMES, DEFAULT_BUTTON_LOADING_ANIMATION, type ButtonLoadingAnimationName } from './buttonLoadingAnimations';
 
 interface AppButtonProps extends ButtonProps {
     isLoading?: boolean;
@@ -21,7 +21,7 @@ export function AppButton({
     disabled,
     isLoading = false,
     loadingText = 'Загрузка...',
-    loadingAnimation = 'random',
+    loadingAnimation = DEFAULT_BUTTON_LOADING_ANIMATION,
     sx,
     ...buttonProps
 }: AppButtonProps) {

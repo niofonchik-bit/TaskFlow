@@ -38,25 +38,23 @@ export function AuthPage() {
                 mode={mode}
                 direction={direction}
             >
-                <AuthShell.Card>
-                    {mode === 'login' ? (
-                        <LoginForm
-                            values={loginValues}
-                            onChange={setLoginValues}
-                            onShowRegister={() => {
-                                handleModeChange('register');
-                            }}
-                        />
-                    ) : (
-                        <RegisterForm
-                            values={registerValues}
-                            onChange={setRegisterValues}
-                            onShowLogin={() => {
-                                handleModeChange('login');
-                            }}
-                        />
-                    )}
-                </AuthShell.Card>
+                {mode === 'login' ? (
+                    <LoginForm
+                        values={loginValues}
+                        onChange={setLoginValues}
+                        onShowRegister={() => {
+                            handleModeChange('register');
+                        }}
+                    />
+                ) : (
+                    <RegisterForm
+                        values={registerValues}
+                        onChange={setRegisterValues}
+                        onShowLogin={() => {
+                            handleModeChange('login');
+                        }}
+                    />
+                )}
             </AuthCardTransition>
         </AuthShell.Root>
     );

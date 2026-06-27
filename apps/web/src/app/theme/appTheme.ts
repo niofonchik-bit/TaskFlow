@@ -1,5 +1,19 @@
 import { createTheme } from '@mui/material';
 
+/** фон поля ввода */
+const inputBackground = 'var(--taskflow-palette-background-paper)';
+
+/** скрывает системный фон автозаполнения браузера */
+const autofillStyles = {
+    '&:-webkit-autofill, &:-webkit-autofill:hover, &:-webkit-autofill:focus, &:-webkit-autofill:active': {
+        WebkitTextFillColor: 'var(--taskflow-palette-text-primary)',
+        caretColor: 'var(--taskflow-palette-text-primary)',
+        WebkitBoxShadow: `0 0 0 1000px ${inputBackground} inset !important`,
+        boxShadow: `0 0 0 1000px ${inputBackground} inset !important`,
+        borderRadius: 'inherit',
+    },
+} as const;
+
 export const appTheme = createTheme({
     cssVariables: {
         cssVarPrefix: 'taskflow',
@@ -128,6 +142,11 @@ export const appTheme = createTheme({
     },
 
     components: {
+        MuiOutlinedInput: {
+            styleOverrides: {
+                input: autofillStyles,
+            },
+        },
         MuiButton: {
             defaultProps: {
                 disableElevation: true,

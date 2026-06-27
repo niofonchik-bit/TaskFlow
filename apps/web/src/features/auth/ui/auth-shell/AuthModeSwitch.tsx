@@ -1,18 +1,25 @@
 import { Box, ButtonBase } from '@mui/material';
 import { LayoutGroup } from 'motion/react';
 import * as m from 'motion/react-m';
+import type { AnimationChoice } from '../../../../shared/animation/model/animation.types';
 import { useAnimationVariant } from '../../../../shared/animation/model/useAnimationVariant';
-import { AUTH_MODE_SWITCH_ANIMATIONS, AUTH_MODE_SWITCH_ANIMATION_NAMES } from '../../animation/authModeSwitchAnimations';
+import {
+    AUTH_MODE_SWITCH_ANIMATIONS,
+    AUTH_MODE_SWITCH_ANIMATION_NAMES,
+    DEFAULT_AUTH_MODE_SWITCH_ANIMATION,
+    type AuthModeSwitchAnimationName,
+} from '../../animation/authModeSwitchAnimations';
 import type { AuthMode } from '../../model/auth.types';
 
 interface AuthModeSwitchProps {
     mode: AuthMode;
     onChange: (mode: AuthMode) => void;
+    animation?: AnimationChoice<AuthModeSwitchAnimationName>;
 }
 
 /** переключает вход и регистрацию */
-export function AuthModeSwitch({ mode, onChange }: AuthModeSwitchProps) {
-    const animationName = useAnimationVariant(AUTH_MODE_SWITCH_ANIMATION_NAMES);
+export function AuthModeSwitch({ mode, onChange, animation = DEFAULT_AUTH_MODE_SWITCH_ANIMATION }: AuthModeSwitchProps) {
+    const animationName = useAnimationVariant(AUTH_MODE_SWITCH_ANIMATION_NAMES, animation);
 
     const transition = AUTH_MODE_SWITCH_ANIMATIONS[animationName];
 
@@ -59,6 +66,7 @@ export function AuthModeSwitch({ mode, onChange }: AuthModeSwitchProps) {
                                 color: isActive ? 'text.primary' : 'text.secondary',
                                 fontSize: '14.5px',
                                 fontWeight: 800,
+                                transition: 'color 180ms ease',
                             }}
                         >
                             {isActive && (

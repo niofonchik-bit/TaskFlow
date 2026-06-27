@@ -1,11 +1,7 @@
 import type { AnimationCollection } from '../../animation/model/animation.types';
 
-export type ButtonLoadingAnimationName = 'orbit' | 'dots' | 'shimmer' | 'progress' | 'pulse';
+export type ButtonLoadingAnimationName = 'orbit' | 'dots' | 'progress';
 
-export const BUTTON_LOADING_ANIMATION_NAMES = [
-    'orbit',
-    'dots',
-    'shimmer',
-    'progress',
-    'pulse',
-] as const satisfies AnimationCollection<ButtonLoadingAnimationName>;
+export const BUTTON_LOADING_ANIMATION_NAMES = ['orbit', 'dots', 'progress'] as const satisfies AnimationCollection<ButtonLoadingAnimationName>;
+
+export const DEFAULT_BUTTON_LOADING_ANIMATION: ButtonLoadingAnimationName = 'orbit';

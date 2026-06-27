@@ -25,7 +25,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     width: 100%;
     min-height: 100%;
 }
@@ -33,7 +33,7 @@
 .auth_transition_stage {
     width: min(864px, 100%);
     overflow: clip;
-    overflow-clip-margin: 72px;
+    overflow-clip-margin: 48px;
     contain: layout paint;
 }
 
@@ -66,16 +66,10 @@
 
     .auth_transition_stage {
         width: 100%;
-        overflow-clip-margin: 44px;
+        overflow-clip-margin: 32px;
     }
 
     .auth_floating_card {
         display: none;
-    }
-}
-
-@media (max-height: 820px) {
-    .auth_content {
-        justify-content: flex-start;
     }
 }

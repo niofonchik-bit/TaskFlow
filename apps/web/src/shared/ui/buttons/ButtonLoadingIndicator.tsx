@@ -95,43 +95,6 @@ export function ButtonLoadingIndicator({ animation, label }: ButtonLoadingIndica
                 </Stack>
             );
 
-        case 'shimmer':
-            return (
-                <Box
-                    component='span'
-                    sx={{
-                        position: 'relative',
-                        overflow: 'hidden',
-                        px: 1,
-                    }}
-                >
-                    <Box
-                        component='span'
-                        sx={{ opacity: 0.82 }}
-                    >
-                        {label}
-                    </Box>
-
-                    <m.span
-                        animate={{
-                            x: ['-140%', '140%'],
-                        }}
-                        transition={{
-                            duration: 1,
-                            repeat: Infinity,
-                            ease: [0.4, 0, 0.2, 1],
-                        }}
-                        style={{
-                            position: 'absolute',
-                            inset: 0,
-                            width: '45%',
-                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)',
-                            transform: 'skewX(-18deg)',
-                        }}
-                    />
-                </Box>
-            );
-
         case 'progress':
             return (
                 <Stack
@@ -186,57 +149,6 @@ export function ButtonLoadingIndicator({ animation, label }: ButtonLoadingIndica
                         />
                     </Box>
                 </Stack>
-            );
-
-        case 'pulse':
-            return (
-                <Box
-                    component='span'
-                    sx={{
-                        position: 'relative',
-                        width: 26,
-                        height: 26,
-                    }}
-                >
-                    {[0, 1].map((index) => (
-                        <m.span
-                            key={index}
-                            animate={{
-                                opacity: [0.8, 0],
-                                scale: [0.45, 1.4],
-                            }}
-                            transition={{
-                                duration: 1.2,
-                                delay: index * 0.5,
-                                repeat: Infinity,
-                                ease: 'easeOut',
-                            }}
-                            style={{
-                                position: 'absolute',
-                                inset: 0,
-                                border: '2px solid currentColor',
-                                borderRadius: '50%',
-                            }}
-                        />
-                    ))}
-
-                    <m.span
-                        animate={{
-                            scale: [0.8, 1, 0.8],
-                            opacity: [0.65, 1, 0.65],
-                        }}
-                        transition={{
-                            duration: 0.8,
-                            repeat: Infinity,
-                        }}
-                        style={{
-                            position: 'absolute',
-                            inset: 8,
-                            borderRadius: '50%',
-                            background: 'currentColor',
-                        }}
-                    />
-                </Box>
             );
     }
 }
