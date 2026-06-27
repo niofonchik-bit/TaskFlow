@@ -15,13 +15,13 @@ export const DEFAULT_AUTH_BACKGROUND_ANIMATION: AuthBackgroundAnimationName = 'd
 export const AUTH_BACKGROUND_ANIMATIONS: Record<AuthBackgroundAnimationName, AuthBackgroundAnimation> = {
     drift: {
         animate: {
-            x: [0, 10, -4, 0],
-            y: [0, -12, -5, 0],
-            rotate: [-2.5, 1, -0.5, -2.5],
+            x: [0, 50, -30, 0],
+            y: [0, -40, -20, 0],
+            rotate: [-2.5, 30, -15, -2.5],
         },
 
         transition: {
-            duration: 22,
+            duration: 60,
             repeat: Infinity,
             repeatDelay: 3,
             ease: 'easeInOut',
