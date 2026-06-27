@@ -54,7 +54,6 @@ export function AnimatedContentSwitch({
                         width: '100%',
                         backfaceVisibility: 'hidden',
                         transformStyle: 'preserve-3d',
-                        willChange: 'transform, opacity, filter',
                     }}
                 >
                     {children}

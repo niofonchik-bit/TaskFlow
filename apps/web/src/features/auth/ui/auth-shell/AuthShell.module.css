@@ -1,5 +1,5 @@
 .auth_root {
-    --auth-page-padding-y: clamp(24px, 4vh, 48px);
+    --auth-page-padding-y: clamp(20px, 3vh, 40px);
 
     position: fixed;
     inset: 0;
@@ -9,9 +9,14 @@
     overflow-x: clip;
     overflow-y: auto;
     overscroll-behavior: contain;
-    scrollbar-gutter: stable both-edges;
     padding: var(--auth-page-padding-y) 20px;
     isolation: isolate;
+    scrollbar-width: none;
+}
+
+.auth_root::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 .auth_content {
@@ -22,14 +27,13 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: calc(100dvh - var(--auth-page-padding-y) - var(--auth-page-padding-y));
+    min-height: 100%;
 }
 
 .auth_transition_stage {
     width: min(864px, 100%);
-    margin-block: -56px;
-    padding-block: 56px;
     overflow: clip;
+    overflow-clip-margin: 72px;
     contain: layout paint;
 }
 
@@ -50,19 +54,11 @@
     position: absolute;
     width: 128px;
     opacity: 0.78;
-    will-change: transform;
-}
-
-.auth_blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(8px);
-    will-change: transform;
 }
 
 @media (max-width: 700px) {
     .auth_root {
-        --auth-page-padding-y: 24px;
+        --auth-page-padding-y: 20px;
 
         padding-right: 16px;
         padding-left: 16px;
@@ -70,8 +66,7 @@
 
     .auth_transition_stage {
         width: 100%;
-        margin-block: -40px;
-        padding-block: 40px;
+        overflow-clip-margin: 44px;
     }
 
     .auth_floating_card {

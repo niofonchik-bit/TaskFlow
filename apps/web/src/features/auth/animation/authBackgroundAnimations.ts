@@ -19,71 +19,76 @@ export const AUTH_BACKGROUND_ANIMATION_NAMES = [
 export const AUTH_BACKGROUND_ANIMATIONS: Record<AuthBackgroundAnimationName, AuthBackgroundAnimation> = {
     drift: {
         animate: {
-            x: [0, 18, -8, 0],
-            y: [0, -24, -10, 0],
-            rotate: [-4, 2, -1, -4],
+            x: [0, 12, -5, 0],
+            y: [0, -14, -6, 0],
+            rotate: [-3, 1.5, -1, -3],
         },
 
         transition: {
-            duration: 13,
+            duration: 20,
             repeat: Infinity,
+            repeatDelay: 2.5,
             ease: 'easeInOut',
         },
     },
 
     orbit: {
         animate: {
-            x: [0, 22, 0, -18, 0],
-            y: [0, 8, -20, 6, 0],
-            rotate: [3, 7, 1, -4, 3],
+            x: [0, 14, 0, -10, 0],
+            y: [0, 5, -12, 4, 0],
+            rotate: [2, 4, 1, -2, 2],
         },
 
         transition: {
-            duration: 16,
+            duration: 24,
             repeat: Infinity,
+            repeatDelay: 3,
             ease: 'easeInOut',
         },
     },
 
     sway: {
         animate: {
-            x: [0, -14, 12, 0],
-            y: [0, -18, -30, 0],
-            rotate: [-2, -7, 5, -2],
+            x: [0, -9, 8, 0],
+            y: [0, -10, -17, 0],
+            rotate: [-1, -4, 3, -1],
         },
 
         transition: {
-            duration: 14,
+            duration: 22,
             repeat: Infinity,
+            repeatDelay: 2,
             ease: 'easeInOut',
         },
     },
 
     breathe: {
         animate: {
-            y: [0, -14, 0],
-            scale: [1, 1.045, 1],
-            rotate: [2, -2, 2],
+            y: [0, -9, 0],
+            scale: [1, 1.025, 1],
+            rotate: [1, -1, 1],
         },
 
         transition: {
-            duration: 10,
+            duration: 18,
             repeat: Infinity,
+            repeatDelay: 3.5,
             ease: 'easeInOut',
         },
     },
 
     wave: {
         animate: {
-            x: [0, 10, -10, 0],
-            y: [0, -12, -24, 0],
-            rotate: [-5, 4, -3, -5],
-            scale: [1, 0.97, 1.03, 1],
+            x: [0, 7, -7, 0],
+            y: [0, -8, -14, 0],
+            rotate: [-3, 2, -2, -3],
+            scale: [1, 0.99, 1.015, 1],
         },
 
         transition: {
-            duration: 12,
+            duration: 21,
             repeat: Infinity,
+            repeatDelay: 2.75,
             ease: 'easeInOut',
         },
     },
