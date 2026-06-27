@@ -7,4 +7,6 @@ coverage/
 .env.development
 !.env.example
 
+.zip
+
 apps/api/src/generated/
