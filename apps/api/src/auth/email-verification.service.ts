@@ -91,6 +91,35 @@ export class EmailVerificationService {
     });
   }
 
+  /** подтверждает почту текущего пользователя без отправки письма */
+  async verifyCurrentUserStub(userId: string): Promise<void> {
+    const verifiedAt = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.users.updateMany({
+        where: {
+          id: userId,
+          archived_at: null,
+          email_verified_at: null,
+        },
+        data: {
+          email_verified_at: verifiedAt,
+          updated_at: verifiedAt,
+        },
+      });
+
+      await tx.email_verification_tokens.updateMany({
+        where: {
+          user_id: userId,
+          consumed_at: null,
+        },
+        data: {
+          consumed_at: verifiedAt,
+        },
+      });
+    });
+  }
+
   /** получает секрет для HMAC verification token */
   private getSecret(): string {
     return this.configService.getOrThrow<string>('AUTH_SESSION_SECRET');

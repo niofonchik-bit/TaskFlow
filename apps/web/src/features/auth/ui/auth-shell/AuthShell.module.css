@@ -1,0 +1,86 @@
+.auth_root {
+    --auth-page-padding-y: clamp(24px, 4vh, 48px);
+
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100dvh;
+    overflow-x: clip;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable both-edges;
+    padding: var(--auth-page-padding-y) 20px;
+    isolation: isolate;
+}
+
+.auth_content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: calc(100dvh - var(--auth-page-padding-y) - var(--auth-page-padding-y));
+}
+
+.auth_transition_stage {
+    width: min(864px, 100%);
+    margin-block: -56px;
+    padding-block: 56px;
+    overflow: clip;
+    contain: layout paint;
+}
+
+.auth_transition_content {
+    width: min(384px, 100%);
+    margin-inline: auto;
+}
+
+.auth_background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: clip;
+    pointer-events: none;
+}
+
+.auth_floating_card {
+    position: absolute;
+    width: 128px;
+    opacity: 0.78;
+    will-change: transform;
+}
+
+.auth_blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(8px);
+    will-change: transform;
+}
+
+@media (max-width: 700px) {
+    .auth_root {
+        --auth-page-padding-y: 24px;
+
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+
+    .auth_transition_stage {
+        width: 100%;
+        margin-block: -40px;
+        padding-block: 40px;
+    }
+
+    .auth_floating_card {
+        display: none;
+    }
+}
+
+@media (max-height: 820px) {
+    .auth_content {
+        justify-content: flex-start;
+    }
+}

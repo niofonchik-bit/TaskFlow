@@ -3,10 +3,8 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   AUTH_LOCK_MINUTES,
@@ -21,7 +19,6 @@ import type {
   AuthResultResponse,
   AuthUserResponse,
 } from './types/auth-response.types';
-import { createOrganizationSlug } from './utils/slug.utils';
 
 /** управляет регистрацией, входом и профилем текущего пользователя */
 @Injectable()
@@ -29,13 +26,13 @@ export class AuthService {
   /** создает auth-сервис */
   constructor(
     private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
     private readonly passwordService: PasswordService,
     private readonly sessionService: SessionService,
     private readonly emailVerificationService: EmailVerificationService,
   ) {}
 
   /** регистрирует пользователя и первую организацию */
+  /** регистрирует пользователя без создания организации */
   async register(
     dto: RegisterDto,
     request: Request,
@@ -58,22 +55,8 @@ export class AuthService {
     }
 
     const passwordHash = await this.passwordService.hashPassword(dto.password);
-    let devEmailVerificationToken: string | undefined;
 
     const createdUser = await this.prisma.$transaction(async (tx) => {
-      const ownerRole = await tx.roles.findFirst({
-        where: {
-          organization_id: null,
-          key: 'owner',
-        },
-      });
-
-      if (!ownerRole) {
-        throw new InternalServerErrorException(
-          'системная роль owner не создана',
-        );
-      }
-
       const user = await tx.users.create({
         data: {
           email,
@@ -85,36 +68,12 @@ export class AuthService {
         },
       });
 
-      const organization = await tx.organizations.create({
-        data: {
-          name: dto.organizationName,
-          slug: createOrganizationSlug(dto.organizationName, email),
-          owner_user_id: user.id,
-          created_by_id: user.id,
-          updated_by_id: user.id,
-        },
-        select: {
-          id: true,
-        },
-      });
-
-      await tx.organization_members.create({
-        data: {
-          organization_id: organization.id,
-          user_id: user.id,
-          role_id: ownerRole.id,
-        },
-      });
-
-      const verificationToken =
-        await this.emailVerificationService.createVerificationToken(
-          user.id,
-          email,
-          request,
-          tx,
-        );
-
-      devEmailVerificationToken = verificationToken.token;
+      await this.emailVerificationService.createVerificationToken(
+        user.id,
+        email,
+        request,
+        tx,
+      );
 
       return user;
     });
@@ -128,9 +87,6 @@ export class AuthService {
     return {
       user,
       session,
-      devEmailVerificationToken: this.shouldExposeDevEmailToken()
-        ? devEmailVerificationToken
-        : undefined,
     };
   }
 
@@ -195,6 +151,13 @@ export class AuthService {
   /** подтверждает почту пользователя */
   async verifyEmail(token: string): Promise<void> {
     await this.emailVerificationService.verifyEmail(token);
+  }
+
+  /** подтверждает почту текущего пользователя через временную заглушку */
+  async verifyEmailStub(userId: string): Promise<AuthUserResponse> {
+    await this.emailVerificationService.verifyCurrentUserStub(userId);
+
+    return this.getMe(userId);
   }
 
   /** возвращает безопасные данные пользователя для frontend */
@@ -281,10 +244,5 @@ export class AuthService {
   /** создает одинаковую ошибку для неверной почты и пароля */
   private createInvalidCredentialsError(): UnauthorizedException {
     return new UnauthorizedException('неверная почта или пароль');
-  }
-
-  /** разрешает dev-токен подтверждения почты только вне production */
-  private shouldExposeDevEmailToken(): boolean {
-    return this.configService.get<string>('NODE_ENV') !== 'production';
   }
 }

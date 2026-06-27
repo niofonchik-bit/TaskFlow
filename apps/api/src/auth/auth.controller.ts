@@ -42,7 +42,6 @@ export class AuthController {
 
     return {
       data: result.user,
-      devEmailVerificationToken: result.devEmailVerificationToken,
     };
   }
 
@@ -86,6 +85,15 @@ export class AuthController {
   async me(@CurrentUser() user: AuthenticatedUser) {
     return {
       data: await this.authService.getMe(user.id),
+    };
+  }
+
+  /** подтверждает почту текущего пользователя через временную заглушку */
+  @Post('email/verify-stub')
+  @UseGuards(AuthGuard)
+  async verifyEmailStub(@CurrentUser() user: AuthenticatedUser) {
+    return {
+      data: await this.authService.verifyEmailStub(user.id),
     };
   }
 

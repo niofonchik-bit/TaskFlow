@@ -25,5 +25,4 @@ export interface AuthSessionResponse {
 export interface AuthResultResponse {
   user: AuthUserResponse;
   session: AuthSessionResponse;
-  devEmailVerificationToken?: string;
 }
